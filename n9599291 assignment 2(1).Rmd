@@ -1,0 +1,127 @@
+---
+title: "assignment 2"
+author: "jonno"
+date: "10 May 2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+Task1.1
+
+```{r}
+# in order to use the ggplot2 and read.csv function, we need to invoke these two packages 
+library(ggplot2)
+library(reshape2)
+#use the read.csv function get the data from files.
+apr <- read.csv("~/R/data/uber-raw-data-apr14.csv")
+may <- read.csv("~/R/data/uber-raw-data-may14.csv")
+jun <- read.csv("~/R/data/uber-raw-data-jun14.csv")
+jul <- read.csv("~/R/data/uber-raw-data-jul14.csv")
+aug <- read.csv("~/R/data/uber-raw-data-aug14.csv")
+sep <- read.csv("~/R/data/uber-raw-data-sep14.csv")
+# because there are 6 table, I use the rbind() function to connect them regard as rows.
+uber <- rbind(apr,may,jun,jul,aug,sep)
+# convert the date.time to the weekdays and creat a new column for weekdays.
+uber$week <- c(weekdays(as.Date(uber$Date.Time,format="%m/%d/%y")))
+#compute the how many picktimes for per day of the week.
+x <- factor(uber$week, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+#give the concenquence to a new variable.
+uber_week <- table(x)
+#show the concenquence 
+uber_week
+```
+
+
+```{r }
+#convert the table form to the frame form, because ggplot can deal with frame data.
+uber_final <- data.frame(uber_week)
+#give the two type of data new names
+names(uber_final) <- c("weekday", "picktimes")
+#visualise the data
+ggplot(uber_final, aes(x=weekday, y=picktimes, group=1, fill = picktimes)) + geom_point(alpha = 0.5) + geom_line() + geom_tile(color = "white") + scale_fill_gradient(low = "white" ,high = "red")    
+```
+above these analysis, the largest number of uber pick ups is friday, which is 755145 times. the minimum picktimes is monday, which is 490180 times. the line chart show the picktimes increase form Monday to Friday. Then, the picktimes decrease from Saturday to next Monday. as a result, the picktimes raise in the week and reduce on the weekend. 
+
+
+Task1.2
+
+```{r }
+# convert the date.time to the month form and creat a new column for months.
+uber$month <- c(months(as.Date(uber$Date.Time, format="%m/%d/%y")))
+#calculate the uber picktimes in each month.
+y <- factor(uber$month, levels = c("April","May","June","July","August","September"))
+#give the result to a new variable.
+uber_month <- table(y)
+#convert the table form to the frame form.
+uber_month_final <- data.frame(uber_month)
+#give the first and second column new names.
+names(uber_month_final) <- c("month", "picktimes")
+#visualise the data
+ggplot(uber_month_final, aes(x=month, y=picktimes, fill= picktimes, group = 1)) + geom_tile(color = "white") + scale_fill_gradient(low = "white" ,high = "red") + geom_line()
+```
+accroding the chart, we can find the NYC uber users increase for each month. fuhermore, the rasie rate also increase fastly. Thus, more and more people in NYC begin to use uber.  
+
+Task1.3
+
+I want to konw one day how picktimes partterns chaggens, so I divide one day to 24 period. I wil caculate each hour how many people use the uber. 
+```{r }
+#since the date.time have year, days, month, hour, minutes and seconds information, I can extract the hour information to caculate the how many people use uber per hour. Therefore, i use sub fuction to subtract years, daus and month information. then give the result to a new value.
+uber_hour <- sub("[0-9]/[0-9]?[0-9]/2014 ","", uber$Date.Time)
+#subtract the minutes and seconds information .
+uber_hour_final <- sub(":[0-9][0-9]:00","", uber_hour)
+#creat a new column for hour.
+uber$hour <- uber_hour_final
+#caculate how many people use the uber in one hour.
+uber_table <- factor(uber$hour, levels = c("0", "1","2","3","4","5","6","7","8","9","10","11","12","13","14","15","16","17","18","19","20","21","22","23" ))
+#give the result to a new variable.
+uber_table_final <- table(uber_table)
+#convert the table form to the frame form.
+uber_hour_df <- data.frame(uber_table_final)
+# give first and second column new names.
+names(uber_hour_df) <- c("hours", "picktimes")
+#visualise the date 
+ggplot(uber_hour_df, aes(x=hours, y=picktimes, fill=picktimes, group=1)) + geom_line()+ geom_tile(color = "white") + scale_fill_gradient(low = "white" ,high = "blue")
+```
+accroding the line chart, the most popular in terms of pick ups is between 17:00 to 18:00. the picktimes decrease from 0:00 to 3:00 clock and it increases from 3 am to 8 am clock. Then the picktimes is decrease little between 8 am to 11 am. After 11 am, more and more people use uber till 18:00. soon afterwards 18:00, the pick ups decrease untill 0:00. However, in 18.00 to 0:00, the picktimes drop rapidly from 21:00 to 23:59.  
+
+
+Task2.1
+
+```{r }
+# to use the ggmap, there are some packages which need to be activated.
+library(evaluate)
+library(ggmap)
+library(mapproj)
+#get the New York City map from google map in internet.
+new_york_map <- get_map(location = "New York City",  zoom = 13, maptype="roadmap")
+#show the map
+ggmap(new_york_map)
+```
+
+
+
+```{r }
+#give the map to a variable.
+city_map <- ggmap(new_york_map)
+#use ggmap to do the spatial and density analysis for weekdays .
+city_map + stat_density2d(data = uber, aes(x=Lon, y=Lat, fill=..level.., alpha=0.5), size=2, bins=5, geom = "polygon") + facet_wrap(~week)
+```
+
+Accoring the spatial distribution, most of pick ups of uber concentrate on city center. Howerever, the distribution is different per day of the week. we can see that the using area expand from Monday to Saturday. The pick ups area shrink from Sunday to Monday. Thus, more different area people like use uber on Tuseday, Wendnesday, Thursday, and Saturday. on the Sunday and Monday, less people use the uber in different area.
+
+Task2.2
+
+```{r }
+#do the spatial and density analysis for per month
+city_map + stat_density2d(data = uber, aes(x=Lon, y=Lat, color=month, fill=..level..,alpha=0.5), size=0.5, bins = 5, geom = "polygon") + facet_wrap(~month)
+```
+according to spatial anlaysis, we can notice that the people usually use uber in the western of city center. from May to April, the uber using area expand a little.However, on the june, the uber using area shrinked quickly compare with April and May.After June, the uber using area expand a little on the July. Then, on the August, the uber using area expand rapidly compare tp July. finally, on the septemper, the using area shrinked a little compare to August.  
+
+Task2.3
+
+```{r }
+#do the spatial and density analysis for each hour.
+city_map + stat_density2d(aes(x=Lon, y=Lat, fill = ..level.., alpha=0.5), size=2, bins = 5, data = uber, geom = "polygon") + facet_wrap(~hour)
+```
+Acroding to the spatial ditribution, from 0:00 am to 2:59 am, the uber using area is smallest comparing with other period of one day. Then after 3:00 am, the uber using area expand rapidly till 4:59 am. From 5:00 am to 20:59 am, the uber using area do not change too much, which concentrate on the westerm of New York city center. Next, the uber using area begin to shink quickly from 21:00 to 23:59. 
+
